@@ -10,7 +10,9 @@ const port = process.env.PORT || 5000
 app.use(cors());
 app.use(express.json());
 
-const client = new MongoClient(process.env.MONGODB_URL);
+const MONGODB_BASE_URL = `mongodb://${process.env.MONGODB_USER}:${process.env.MONGODB_PASSWORD}@ac-n9vqlya-shard-00-00.d1i0h77.mongodb.net:27017,ac-n9vqlya-shard-00-01.d1i0h77.mongodb.net:27017,ac-n9vqlya-shard-00-02.d1i0h77.mongodb.net:27017/?ssl=true&replicaSet=atlas-7upjpt-shard-0&authSource=admin`
+
+const client = new MongoClient(MONGODB_BASE_URL);
 
 export async function connectToMongoDB() {
   try {
