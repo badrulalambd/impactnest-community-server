@@ -2,7 +2,7 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 
 const app = express()
 const port = process.env.PORT || 5000
@@ -34,6 +34,7 @@ app.get('/', (req, res) => {
   res.send('Hello ImpactNest Community Member!')
 })
 
+//GET............................
 //API for getting all events data from mongoDB databse
 app.get('/events', async (req, res) => {
   const eventsData = await eventsCollection.find().toArray();
@@ -41,7 +42,25 @@ app.get('/events', async (req, res) => {
   console.log('Fetched all events data from MongoDB');
 })
 
-//Create API for Posting data to mongoDB database or add-destination
+//API for getting single user events data from mongoDB databse
+app.get('/events/:email', async (req, res) => {
+  const { email } = req.params;
+  const eventsData = await eventsCollection.find({ email }).toArray();
+  res.send(eventsData);
+  console.log('Fetched events data for user from MongoDB');
+})
+//Create API for getting single data from mongoDB database
+app.get(`/events/single/:id`, async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+  const result = await eventsCollection.findOne(query);
+  res.send(result);
+  console.log('Fetched single event data from MongoDB');
+})
+
+
+//POST............................
+//API for Posting data to mongoDB database or add-event
 app.post('/events', async (req, res) => {
   const formData = req.body;
    const result = await eventsCollection.insertOne(formData); 
@@ -49,6 +68,17 @@ app.post('/events', async (req, res) => {
   res.send(result);
 })
 
+//DELETE............................
+//API for deleting event from the database
+app.delete('/events/single/:id', async (req, res) => {
+  const id = req.params.id;
+  const result = await eventsCollection.deleteOne({ _id: new ObjectId(id) });
+  res.send(result);
+  console.log(result);
+})
+
 app.listen(port, () => {
   console.log(`ImpactNest Community server is running on port ${port}`)
 })
+
+export default app;
