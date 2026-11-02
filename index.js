@@ -68,6 +68,55 @@ app.post('/events', async (req, res) => {
   res.send(result);
 })
 
+
+//PATCH............................
+//API for update the event data
+app.patch("/events/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const {
+      title,
+      type,
+      date,
+      location,
+      imageUrl,
+      description,
+    } = req.body;
+
+    const result = await eventsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          title,
+          type,
+          date,
+          location,
+          imageUrl,
+          description,
+        },
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        message: "Event not found.",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Event updated successfully.",
+    });
+  } catch (error) {
+    console.error("Error updating event:", error);
+
+    return res.status(500).json({
+      message: "Failed to update the event.",
+    });
+  }
+});
+
+
 //DELETE............................
 //API for deleting event from the database
 app.delete('/events/single/:id', async (req, res) => {
