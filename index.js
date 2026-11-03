@@ -42,12 +42,30 @@ app.get('/events', async (req, res) => {
   res.send(eventsData);
   console.log('Fetched all events data from MongoDB');
 })
-//API for getting 6 recent events data from mongoDB databse
-app.get('/recentevents', async (req, res) => {
-  const eventsData = await eventsCollection.find().limit(6).toArray();
-  res.send(eventsData);
-  console.log('Fetched all events data from MongoDB');
-})
+// API for getting the 6 most recent upcoming events from MongoDB
+app.get("/recentevents", async (req, res) => {
+  try {
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Dhaka",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+
+    const eventsData = await eventsCollection
+      .find({ date: { $gte: today } })
+      .sort({ date: 1 })
+      .limit(6)
+      .toArray();
+
+    res.send(eventsData);
+
+    console.log("Fetched the 6 nearest upcoming events from MongoDB");
+  } catch (error) {
+    console.error("Error fetching upcoming events:", error);
+    res.status(500).send({ message: "Failed to fetch upcoming events" });
+  }
+});
 //API for getting single user events data from mongoDB databse
 app.get('/events/:email', async (req, res) => {
   const { email } = req.params;
@@ -70,6 +88,25 @@ app.get('/joinedevents/:email', async (req, res) => {
   res.send(joinedEventsData);
   console.log('Fetched joinedEvents data for userEmail from MongoDB', joinedEventsData);
 })
+
+// API for getting past events data from MongoDB
+app.get("/pastevents", async (req, res) => {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+
+    const eventsData = await eventsCollection
+      .find({ date: { $lt: today } }).limit(5)
+      .sort({ date: -1 })
+      .toArray();
+
+    res.send(eventsData);
+
+    console.log("Fetched past events from MongoDB");
+  } catch (error) {
+    console.error("Error fetching past events:", error);
+    res.status(500).send({ message: "Failed to fetch past events" });
+  }
+});
 
 
 //POST............................
