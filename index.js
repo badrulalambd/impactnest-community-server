@@ -42,7 +42,12 @@ app.get('/events', async (req, res) => {
   res.send(eventsData);
   console.log('Fetched all events data from MongoDB');
 })
-
+//API for getting 6 recent events data from mongoDB databse
+app.get('/recentevents', async (req, res) => {
+  const eventsData = await eventsCollection.find().limit(6).toArray();
+  res.send(eventsData);
+  console.log('Fetched all events data from MongoDB');
+})
 //API for getting single user events data from mongoDB databse
 app.get('/events/:email', async (req, res) => {
   const { email } = req.params;
@@ -57,6 +62,13 @@ app.get(`/events/single/:id`, async (req, res) => {
   const result = await eventsCollection.findOne(query);
   res.send(result);
   console.log('Fetched single event data from MongoDB');
+})
+//API for getting all joinedevents data from mongoDB databse
+app.get('/joinedevents/:email', async (req, res) => {
+  const email = req.params.email;
+  const joinedEventsData = await joinedeventsCollection.find({ userEmail: email }).toArray();
+  res.send(joinedEventsData);
+  console.log('Fetched joinedEvents data for userEmail from MongoDB', joinedEventsData);
 })
 
 
