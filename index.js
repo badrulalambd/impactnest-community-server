@@ -1,8 +1,8 @@
-
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
 import { MongoClient, ObjectId } from 'mongodb';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const app = express()
 const port = process.env.PORT || 5000
@@ -29,7 +29,33 @@ const db = mongoClient.db('impactnestdb');
 const eventsCollection = db.collection('events');
 const joinedeventsCollection = db.collection('joinedevents');
 
+const verifyUserWithMiddlewareToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  console.log("authHeader", authHeader);
+  if (!authHeader) {
+    return res.status(401).send({ msg: "Unauthorized" });
+  }
+  console.log("I'm Middleware!!!");
 
+  const token = authHeader.split(" ")[1];
+  console.log(token);
+  if (!token) {
+    return res.status(401).send({ msg: "Unauthorized" });
+  }
+
+  const JWKS = createRemoteJWKSet(
+    new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
+  )
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    console.log("PayLoad: ", payload);
+    next();
+  } catch(error) {
+    return res.status(500).send({ msg: "Server Error" }, error);
+  }
+
+}
 
 app.get('/', (req, res) => {
   res.send('Hello ImpactNest Community Member!')
@@ -37,13 +63,13 @@ app.get('/', (req, res) => {
 
 //GET............................
 //API for getting all events data from mongoDB databse
-app.get('/events', async (req, res) => {
+app.get('/events', verifyUserWithMiddlewareToken, async (req, res) => {
   const eventsData = await eventsCollection.find().toArray();
   res.send(eventsData);
   console.log('Fetched all events data from MongoDB');
 })
 // API for getting the 6 most recent upcoming events from MongoDB
-app.get("/recentevents", async (req, res) => {
+app.get("/recentevents", verifyUserWithMiddlewareToken, async (req, res) => {
   try {
     const today = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Dhaka",
@@ -67,14 +93,14 @@ app.get("/recentevents", async (req, res) => {
   }
 });
 //API for getting single user events data from mongoDB databse
-app.get('/events/:email', async (req, res) => {
+app.get('/events/:email', verifyUserWithMiddlewareToken, async (req, res) => {
   const { email } = req.params;
   const eventsData = await eventsCollection.find({ email }).toArray();
   res.send(eventsData);
   console.log('Fetched events data for user from MongoDB');
 })
 //API for getting single data from mongoDB database
-app.get(`/events/single/:id`, async (req, res) => {
+app.get(`/events/single/:id`, verifyUserWithMiddlewareToken, async (req, res) => {
   const id = req.params.id;
   const query = { _id: new ObjectId(id) };
   const result = await eventsCollection.findOne(query);
@@ -82,7 +108,7 @@ app.get(`/events/single/:id`, async (req, res) => {
   console.log('Fetched single event data from MongoDB');
 })
 //API for getting all joinedevents data from mongoDB databse
-app.get('/joinedevents/:email', async (req, res) => {
+app.get('/joinedevents/:email', verifyUserWithMiddlewareToken, async (req, res) => {
   const email = req.params.email;
   const joinedEventsData = await joinedeventsCollection.find({ userEmail: email }).toArray();
   res.send(joinedEventsData);
@@ -90,7 +116,7 @@ app.get('/joinedevents/:email', async (req, res) => {
 })
 
 // API for getting past events data from MongoDB
-app.get("/pastevents", async (req, res) => {
+app.get("/pastevents", verifyUserWithMiddlewareToken, async (req, res) => {
   try {
     const today = new Date().toISOString().split("T")[0];
 
@@ -108,10 +134,9 @@ app.get("/pastevents", async (req, res) => {
   }
 });
 
-
 //POST............................
 //API for Posting data to mongoDB database or add-event
-app.post('/events', async (req, res) => {
+app.post('/events', verifyUserWithMiddlewareToken, async (req, res) => {
   const formData = req.body;
   const result = await eventsCollection.insertOne(formData);
   console.log("Data form Event", formData);
@@ -125,7 +150,7 @@ app.post('/events', async (req, res) => {
 //   console.log("joinedEvent: ", result);
 //   res.send(result);
 // })
-app.post('/joinedevents', async (req, res) => {
+app.post('/joinedevents', verifyUserWithMiddlewareToken, async (req, res) => {
   try {
     const data = req.body;
 
@@ -159,13 +184,11 @@ app.post('/joinedevents', async (req, res) => {
   }
 });
 
-
 //PATCH............................
 //API for update the event data
-app.patch("/events/:id", async (req, res) => {
+app.patch("/events/:id", verifyUserWithMiddlewareToken, async (req, res) => {
   try {
     const { id } = req.params;
-
     const {
       title,
       type,
@@ -207,10 +230,9 @@ app.patch("/events/:id", async (req, res) => {
   }
 });
 
-
 //DELETE............................
 //API for deleting event from the database
-app.delete('/events/single/:id', async (req, res) => {
+app.delete('/events/single/:id', verifyUserWithMiddlewareToken, async (req, res) => {
   const id = req.params.id;
   const result = await eventsCollection.deleteOne({ _id: new ObjectId(id) });
   res.send(result);
