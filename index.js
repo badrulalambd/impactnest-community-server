@@ -31,45 +31,38 @@ const joinedeventsCollection = db.collection('joinedevents');
 
 const verifyUserWithMiddlewareToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-  console.log("authHeader", authHeader);
   if (!authHeader) {
-    return res.status(401).send({ msg: "Unauthorized" });
+    return res.status(401).send({ msg: "Unauthorized authHeader" });
   }
-  console.log("I'm Middleware!!!");
-
   const token = authHeader.split(" ")[1];
-  console.log(token);
   if (!token) {
-    return res.status(401).send({ msg: "Unauthorized" });
+    return res.status(401).send({ msg: "Unauthorized Token" });
   }
-
   const JWKS = createRemoteJWKSet(
     new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
   )
 
   try {
     const { payload } = await jwtVerify(token, JWKS);
-    console.log("PayLoad: ", payload);
     next();
   } catch (error) {
     return res.status(500).send({ msg: "Server Error" }, error);
   }
-
 }
 
 app.get('/', (req, res) => {
-  res.send('Hello ImpactNest Community Member!')
+  res.send('Hello ImpactNest Community, Server is working...')
 })
 
 //GET............................
 //API for getting all events data from mongoDB databse
-app.get('/events', verifyUserWithMiddlewareToken, async (req, res) => {
+app.get('/events', async (req, res) => {
   const eventsData = await eventsCollection.find().toArray();
   res.send(eventsData);
   console.log('Fetched all events data from MongoDB');
 })
 // API for getting the 6 most recent upcoming events from MongoDB
-app.get("/recentevents", verifyUserWithMiddlewareToken, async (req, res) => {
+app.get("/recentevents", async (req, res) => {
   try {
     const today = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Dhaka",
@@ -83,24 +76,19 @@ app.get("/recentevents", verifyUserWithMiddlewareToken, async (req, res) => {
       .sort({ date: 1 })
       .limit(6)
       .toArray();
-
     res.send(eventsData);
-
-    console.log("Fetched the 6 nearest upcoming events from MongoDB");
   } catch (error) {
-    console.error("Error fetching upcoming events:", error);
     res.status(500).send({ message: "Failed to fetch upcoming events" });
   }
 });
-//API for getting single user events data from mongoDB databse
+//API for getting single user events data for manage-events page from mongoDB databse
 app.get('/events/:email', verifyUserWithMiddlewareToken, async (req, res) => {
   const { email } = req.params;
   const eventsData = await eventsCollection.find({ email }).toArray();
   res.send(eventsData);
-  console.log('Fetched events data for user from MongoDB');
 })
-//API for getting single data from mongoDB database
-app.get(`/events/single/:id`, verifyUserWithMiddlewareToken, async (req, res) => {
+//API for getting single event data from mongoDB database
+app.get(`/events/single/:id`, async (req, res) => {
   const id = req.params.id;
   const query = { _id: new ObjectId(id) };
   const result = await eventsCollection.findOne(query);
@@ -116,7 +104,7 @@ app.get('/joinedevents/:email', verifyUserWithMiddlewareToken, async (req, res) 
 })
 
 // API for getting past events data from MongoDB
-app.get("/pastevents", verifyUserWithMiddlewareToken, async (req, res) => {
+app.get("/pastevents", async (req, res) => {
   try {
     const today = new Date().toISOString().split("T")[0];
 
