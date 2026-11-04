@@ -130,12 +130,36 @@ app.post('/events', verifyUserWithMiddlewareToken, async (req, res) => {
   console.log("Data form Event", formData);
   res.send(result);
 })
-
+// POST API for uploading the joined event data 
 app.post('/joinedevents', verifyUserWithMiddlewareToken, async (req, res) => {
-  const data = req.body;
-  const result = await joinedeventsCollection.insertOne(data);
-  console.log('joinedEvent:', result);
-  res.send(result);
+  try {
+    const data = req.body;
+
+    const id = req.body.eventId;
+    const email = req.body.userEmail;
+
+    // Check if the user has already joined this event
+    const existEvent = await joinedeventsCollection.findOne({
+      eventId: id,
+      userEmail: email,
+    });
+
+    if (existEvent) {
+      return res.status(409).send({
+        message: "You have already joined this event.",
+      });
+    }
+
+    const result = await joinedeventsCollection.insertOne(data);
+
+    console.log('joinedEvent:', result);
+
+    res.status(201).send(result);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Internal server error" });
+  }
 });
 
 //PATCH............................
