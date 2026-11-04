@@ -51,7 +51,7 @@ const verifyUserWithMiddlewareToken = async (req, res, next) => {
     const { payload } = await jwtVerify(token, JWKS);
     console.log("PayLoad: ", payload);
     next();
-  } catch(error) {
+  } catch (error) {
     return res.status(500).send({ msg: "Server Error" }, error);
   }
 
@@ -143,45 +143,11 @@ app.post('/events', verifyUserWithMiddlewareToken, async (req, res) => {
   res.send(result);
 })
 
-//API for posting booking data to mongoDB
-// app.post('/joinedevents', async (req, res) => {
-//   const data = req.body;
-//   const result = await joinedeventsCollection.insertOne(data);
-//   console.log("joinedEvent: ", result);
-//   res.send(result);
-// })
 app.post('/joinedevents', verifyUserWithMiddlewareToken, async (req, res) => {
-  try {
-    const data = req.body;
-
-    // Check whether the user has already joined this event
-    const existingEvent = await joinedeventsCollection.findOne({
-      eventId: data.eventId,
-      email: data.email,
-    });
-
-    if (existingEvent) {
-      return res.status(409).send({
-        message: 'You have already joined this event.',
-      });
-    }
-
-    // Insert only if no duplicate exists
-    const result = await joinedeventsCollection.insertOne(data);
-
-    console.log('joinedEvent:', result);
-
-    res.status(201).send({
-      message: 'Successfully joined the event.',
-      result,
-    });
-  } catch (error) {
-    console.error('Error joining event:', error);
-
-    res.status(500).send({
-      message: 'Failed to join the event.',
-    });
-  }
+  const data = req.body;
+  const result = await joinedeventsCollection.insertOne(data);
+  console.log('joinedEvent:', result);
+  res.send(result);
 });
 
 //PATCH............................
